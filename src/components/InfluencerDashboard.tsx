@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { PlusCircle, TrendingUp, Share2, Edit2, CheckCircle, LogOut, ShieldAlert, Loader2 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Party, UserProfile } from '../types';
 
 interface InfluencerDashboardProps {
@@ -10,140 +11,210 @@ interface InfluencerDashboardProps {
   onRequestVerification: () => void;
 }
 
-export const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ 
-  user, 
-  parties, 
-  onCreateEvent, 
+export const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({
+  user,
+  parties,
+  onCreateEvent,
   onLogout,
-  onRequestVerification 
+  onRequestVerification,
 }) => {
+  const stats = useMemo(() => {
+    const live = parties.filter((p) => p.status === 'APPROVED');
+    const pending = parties.filter((p) => p.status === 'PENDING');
+    const sold = parties.reduce((acc, p) => acc + (p.ticketsSold ?? 0), 0);
+    const revenue = parties.reduce(
+      (acc, p) => acc + (p.ticketsSold ?? 0) * (p.price ?? 0),
+      0
+    );
+    return { live, pending, sold, revenue };
+  }, [parties]);
+
   return (
-    <div className="p-12 max-w-7xl mx-auto flex flex-col h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-900/50 via-slate-950 to-slate-950">
-      <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+    <div
+      className="p-6 md:p-10 max-w-7xl mx-auto flex flex-col h-full relative z-10"
+      data-testid="influencer-dashboard"
+    >
+      <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="font-display text-5xl md:text-6xl uppercase tracking-tighter">
-              Welcome, <span className="text-indigo-400">{user.nickname}</span>
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <h1 className="font-display text-4xl md:text-5xl uppercase tracking-tighter text-white leading-none">
+              Welcome,{' '}
+              <span className="wordmark">@{user.nickname}</span>
             </h1>
             {user.isVerified ? (
-              <CheckCircle className="text-emerald-500" size={32} />
+              <CheckCircle className="text-[#b6ff3c]" size={28} />
             ) : user.isVerificationPending ? (
-              <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/50 rounded text-amber-500 font-label text-[10px] uppercase font-bold tracking-widest">
-                <Loader2 size={12} className="animate-spin" />
+              <div className="chip chip-pending">
+                <Loader2 size={11} className="animate-spin" />
                 Under Review
               </div>
             ) : (
-              <button 
+              <button
                 onClick={onRequestVerification}
-                className="flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/50 rounded text-indigo-400 font-label text-[10px] uppercase font-bold tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-sm"
+                className="chip chip-magenta hover:scale-105 transition-transform"
+                data-testid="dashboard-request-verification"
               >
-                <ShieldAlert size={12} />
+                <ShieldAlert size={11} />
                 Get Verified
               </button>
             )}
           </div>
-          <p className="text-slate-400 font-label text-xs uppercase tracking-widest opacity-60">
-            Reputation Score: <span className="text-indigo-400 font-bold">84/100</span> • {parties.filter(p => p.status === 'PENDING').length} reviews pending
+          <p className="text-[#bba8d6]/70 font-label text-xs uppercase tracking-widest">
+            Reputation: <span className="text-[#2bf0ff] font-bold">84/100</span> · {stats.pending.length} reviews pending
           </p>
         </div>
-        <div className="flex gap-4">
-          <button 
+        <div className="flex gap-3">
+          <button
             onClick={onLogout}
-            className="md:hidden bg-slate-900 border border-slate-800 text-slate-400 px-6 py-4 rounded font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 hover:bg-slate-800 transition-all"
+            className="md:hidden btn-ghost"
+            data-testid="dashboard-logout-mobile"
           >
-            <LogOut size={16} />
+            <LogOut size={14} />
             Exit
           </button>
-          <button 
+          <button
             onClick={onCreateEvent}
-            className="bg-indigo-600 text-white px-8 py-4 rounded font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+            className="btn-neon"
+            data-testid="dashboard-create-event"
           >
-            <PlusCircle size={16} />
+            <PlusCircle size={14} />
             Deploy New Event
           </button>
         </div>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-        <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-lg h-36 flex flex-col justify-between">
-          <span className="font-label text-[10px] text-slate-500 uppercase tracking-widest">Global Reach</span>
-          <div className="text-3xl font-display font-bold text-white">12.4K</div>
-          <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mt-2">
-            <div className="w-[70%] h-full bg-indigo-500"></div>
-          </div>
-        </div>
-        <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-lg h-36 flex flex-col justify-between">
-          <span className="font-label text-[10px] text-slate-500 uppercase tracking-widest">Live Nodes</span>
-          <div className="text-3xl font-display font-bold text-emerald-500">
-            {parties.filter(p => p.status === 'APPROVED').length.toString().padStart(2, '0')}
-          </div>
-          <div className="text-[10px] text-slate-500 uppercase tracking-widest font-label font-bold">Verification Queue Active</div>
-        </div>
-        <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-lg h-36 md:col-span-2 flex flex-col justify-between relative overflow-hidden">
-          <div className="relative z-10">
-            <span className="font-label text-[10px] text-slate-500 uppercase tracking-widest">Protocol Earnings</span>
-            <div className="text-3xl font-display font-bold text-indigo-400 mt-1">$42,900.00</div>
-          </div>
-          <div className="absolute bottom-[-10px] right-[-10px] w-full h-full opacity-10 pointer-events-none">
-            <svg className="w-full h-full text-indigo-400" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <path d="M0 80 Q 25 20 50 60 T 100 10" fill="none" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </div>
-        </div>
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-12">
+        <StatCard label="Global Reach" value="12.4K" accent="#ff2bd6" />
+        <StatCard
+          label="Live Events"
+          value={stats.live.length.toString().padStart(2, '0')}
+          accent="#b6ff3c"
+        />
+        <StatCard
+          label="Tickets Sold"
+          value={stats.sold.toLocaleString()}
+          accent="#2bf0ff"
+        />
+        <StatCard
+          label="Earnings"
+          value={`$${stats.revenue.toLocaleString()}`}
+          accent="#9b5cff"
+          wide
+        />
       </section>
 
-      <section className="space-y-8 flex-1">
-        <div className="flex items-center justify-between opacity-80">
-          <h2 className="font-display text-xl uppercase tracking-widest text-slate-400">Node Inventory</h2>
-          <div className="flex gap-4">
-            <button className="text-[10px] font-label text-indigo-400 uppercase tracking-widest font-bold border-b border-indigo-400">Inventory</button>
-            <button className="text-[10px] font-label text-slate-500 uppercase tracking-widest hover:text-slate-200 transition-colors">Archived</button>
+      <section className="space-y-6 flex-1">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl uppercase tracking-[0.2em] text-white">
+            Event Inventory
+          </h2>
+          <div className="flex gap-5">
+            <button className="text-[10px] font-label text-white uppercase tracking-[0.25em] font-bold border-b border-[#ff2bd6] pb-1">
+              Active
+            </button>
+            <button className="text-[10px] font-label text-[#bba8d6]/50 uppercase tracking-[0.25em] hover:text-white transition-colors">
+              Archived
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {parties.map((party) => (
-            <div key={party.id} className="bg-slate-950 border border-slate-800 rounded p-1 group hover:border-indigo-500/50 transition-all duration-300">
-              <div className="h-40 w-full relative overflow-hidden">
-                <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src={party.posterURL} alt={party.name} />
-                <div className="absolute top-2 right-2 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded text-[10px] border border-slate-800 flex items-center gap-1.5 uppercase font-label font-bold">
+            <motion.div
+              key={party.id}
+              layout
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card rounded-2xl overflow-hidden group hover:-translate-y-1 transition-transform duration-300"
+              data-testid={`dashboard-event-${party.id}`}
+            >
+              <div className="h-44 w-full relative overflow-hidden">
+                <img
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  src={party.posterURL}
+                  alt={party.name}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0b0612] via-transparent to-transparent" />
+                <div className="absolute top-3 right-3">
                   {party.status === 'APPROVED' ? (
-                    <>
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                      <span className="text-emerald-500">Live</span>
-                    </>
+                    <span className="chip chip-live">
+                      <span className="w-1.5 h-1.5 bg-[#b6ff3c] rounded-full" /> Live
+                    </span>
                   ) : party.status === 'PENDING' ? (
-                    <>
-                      <div className="w-1.5 h-1.5 bg-amber-500 animate-pulse rounded-full"></div>
-                      <span className="text-amber-500">Queue</span>
-                    </>
+                    <span className="chip chip-pending">
+                      <span className="w-1.5 h-1.5 bg-[#ffb84d] rounded-full animate-pulse" />
+                      In Queue
+                    </span>
                   ) : (
-                    <>
-                      <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                      <span className="text-red-500">Offline</span>
-                    </>
+                    <span className="chip chip-rejected">
+                      <span className="w-1.5 h-1.5 bg-[#ff3b5c] rounded-full" /> Rejected
+                    </span>
                   )}
                 </div>
               </div>
               <div className="p-5">
-                <h3 className="font-display text-lg mb-4 uppercase tracking-tight text-slate-200">{party.name}</h3>
-                <div className="flex justify-between items-center text-slate-500 font-label text-[10px] uppercase tracking-widest border-t border-slate-800/50 pt-4">
+                <h3 className="font-display text-lg mb-3 uppercase tracking-tight text-white leading-tight">
+                  {party.name}
+                </h3>
+                <div className="flex justify-between items-center text-[#bba8d6]/65 font-label text-[10px] uppercase tracking-[0.18em] border-t border-white/5 pt-4">
                   <div className="flex items-center gap-2">
-                    <TrendingUp size={12} /> {party.ticketsSold}/{party.capacity}
+                    <TrendingUp size={12} className="text-[#ff5cc4]" />
+                    {party.ticketsSold ?? 0}/{party.capacity ?? 0}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 text-[#bba8d6]/70">
                     {party.status === 'APPROVED' ? (
-                      <Share2 size={12} className="cursor-pointer hover:text-indigo-400" />
+                      <Share2
+                        size={13}
+                        className="cursor-pointer hover:text-[#2bf0ff] transition-colors"
+                      />
                     ) : (
-                      <Edit2 size={12} className="cursor-pointer hover:text-indigo-400" />
+                      <Edit2
+                        size={13}
+                        className="cursor-pointer hover:text-[#ff5cc4] transition-colors"
+                      />
                     )}
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
     </div>
   );
 };
+
+const StatCard: React.FC<{
+  label: string;
+  value: string;
+  accent: string;
+  wide?: boolean;
+}> = ({ label, value, accent, wide }) => (
+  <div
+    className={`glass-card rounded-2xl p-5 h-32 flex flex-col justify-between relative overflow-hidden ${
+      wide ? 'col-span-2' : ''
+    }`}
+  >
+    <span
+      className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-20 blur-2xl"
+      style={{ background: accent }}
+    />
+    <span className="font-label text-[10px] text-[#bba8d6]/55 uppercase tracking-[0.25em] font-bold relative z-10">
+      {label}
+    </span>
+    <div
+      className="text-3xl font-display font-bold relative z-10"
+      style={{ color: accent }}
+    >
+      {value}
+    </div>
+    <div className="w-full h-0.5 bg-white/5 rounded-full overflow-hidden relative z-10">
+      <div
+        className="h-full w-3/4 rounded-full"
+        style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
+      />
+    </div>
+  </div>
+);

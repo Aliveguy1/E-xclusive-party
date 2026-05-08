@@ -1,6 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, Users, QrCode, BarChart3, Settings, LogOut } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, QrCode, BarChart3 } from 'lucide-react';
 import { UserRole } from '../types';
+import { Logo } from './Logo';
 
 interface SidebarProps {
   role: UserRole;
@@ -9,88 +10,111 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ role, currentView, onViewChange, onLogout }) => {
-  return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 z-50">
-      <div className="p-8 pb-4">
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-8 h-8 bg-indigo-600 rounded-sm flex items-center justify-center">
-            <span className="font-bold text-white">X</span>
-          </div>
-          <h1 className="text-xl font-display font-bold tracking-tight uppercase tracking-tighter">X-CLUSIV</h1>
-        </div>
-        
-        <nav className="space-y-6">
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-4 font-label">Portal</p>
-            <ul className="space-y-2">
-              <li 
-                onClick={() => onViewChange(role === 'ADMIN' ? 'queue' : 'influencer')}
-                className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all ${
-                  (currentView === 'queue' || currentView === 'influencer')
-                    ? 'text-indigo-400 bg-indigo-400/10 border-r-2 border-indigo-500' 
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <div className={`w-1 h-4 border-l-2 transition-colors ${currentView === 'queue' || currentView === 'influencer' ? 'border-indigo-400' : 'border-slate-800'}`}></div>
-                <span className="text-xs font-bold uppercase tracking-widest">{role === 'ADMIN' ? 'Admin Console' : 'Influencer Feed'}</span>
-              </li>
-              {role === 'ADMIN' && (
-                <li 
-                  onClick={() => onViewChange('registry')}
-                  className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all ${
-                    currentView === 'registry'
-                      ? 'text-indigo-400 bg-indigo-400/10 border-r-2 border-indigo-500' 
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <div className={`w-1 h-4 border-l-2 transition-colors ${currentView === 'registry' ? 'border-indigo-400' : 'border-slate-800'}`}></div>
-                  <span className="text-xs font-bold uppercase tracking-widest">User Directory</span>
-                </li>
-              )}
-            </ul>
-          </div>
-          
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-4 font-label">Tools</p>
-            <ul className="space-y-2">
-              <li 
-                onClick={() => onViewChange(role === 'ADMIN' ? 'qr' : 'analytics')}
-                className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all ${
-                  (currentView === 'qr' || currentView === 'analytics')
-                    ? 'text-indigo-400 bg-indigo-400/10 border-r-2 border-indigo-500' 
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <div className={`w-1 h-4 border-l-2 transition-colors ${currentView === 'qr' || currentView === 'analytics' ? 'border-indigo-400' : 'border-slate-800'}`}></div>
-                <span className="text-xs font-bold uppercase tracking-widest">{role === 'ADMIN' ? 'QR Engine' : 'Analytics Node'}</span>
-              </li>
-            </ul>
-          </div>
-        </nav>
-      </div>
-      
-      <div className="mt-auto p-4 space-y-4">
-        <button 
-          onClick={onLogout}
-          className="w-full flex items-center justify-between p-3 bg-slate-900/50 border border-slate-800 rounded hover:bg-red-500/10 hover:border-red-500/30 transition-all group"
-        >
-          <div className="flex items-center gap-3">
-            <LogOut size={16} className="text-slate-500 group-hover:text-red-500 transition-colors" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 group-hover:text-red-500">Terminate Protocol</span>
-          </div>
-        </button>
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+}
 
-        <div className="flex items-center gap-3 p-2 bg-slate-900/30 rounded border border-slate-800/50">
-          <div className="w-8 h-8 rounded-sm bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold">
+export const Sidebar: React.FC<SidebarProps> = React.memo(({ role, currentView, onViewChange, onLogout }) => {
+  const portalItems: NavItem[] =
+    role === 'ADMIN'
+      ? [
+          { id: 'queue', label: 'Approval Queue', icon: LayoutDashboard },
+          { id: 'registry', label: 'User Registry', icon: Users },
+        ]
+      : [{ id: 'influencer', label: 'Host Dashboard', icon: LayoutDashboard }];
+
+  const toolItems: NavItem[] =
+    role === 'ADMIN'
+      ? [{ id: 'qr', label: 'QR Engine', icon: QrCode }]
+      : [{ id: 'analytics', label: 'Analytics', icon: BarChart3 }];
+
+  const renderItem = (item: NavItem) => {
+    const active = currentView === item.id;
+    const Icon = item.icon;
+    return (
+      <li
+        key={item.id}
+        onClick={() => onViewChange(item.id)}
+        className={`group flex items-center gap-3 pl-4 pr-3 py-3 rounded-lg cursor-pointer transition-all relative ${
+          active
+            ? 'bg-gradient-to-r from-[#ff2bd6]/15 to-transparent text-white'
+            : 'text-[#bba8d6]/65 hover:text-white hover:bg-white/[0.03]'
+        }`}
+        data-testid={`sidebar-nav-${item.id}`}
+      >
+        <span
+          className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-full transition-all ${
+            active ? 'bg-gradient-to-b from-[#ff2bd6] to-[#9b5cff] shadow-[0_0_10px_rgba(255,43,214,0.7)]' : 'bg-transparent'
+          }`}
+        />
+        <Icon size={15} className={active ? 'text-[#ff5cc4]' : 'text-[#bba8d6]/50'} />
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] font-label">{item.label}</span>
+      </li>
+    );
+  };
+
+  return (
+    <aside
+      className="fixed left-0 top-0 h-full w-72 flex flex-col shrink-0 z-50 bg-[#080410]/85 backdrop-blur-xl border-r border-[#ff5cc4]/10"
+      data-testid="sidebar"
+    >
+      <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-[#ff2bd6]/40 to-transparent" />
+
+      <div className="p-7 pb-2">
+        <Logo size="md" />
+        <p className="mt-3 font-label text-[9px] uppercase tracking-[0.4em] text-[#bba8d6]/45">
+          {role === 'ADMIN' ? 'Root Console' : 'Host Console'}
+        </p>
+      </div>
+
+      <nav className="px-4 pt-6 space-y-7 flex-1 overflow-y-auto custom-scrollbar">
+        <div>
+          <p className="text-[9px] uppercase tracking-[0.35em] text-[#bba8d6]/40 mb-3 font-label px-2">
+            Portal
+          </p>
+          <ul className="space-y-1">{portalItems.map(renderItem)}</ul>
+        </div>
+
+        <div>
+          <p className="text-[9px] uppercase tracking-[0.35em] text-[#bba8d6]/40 mb-3 font-label px-2">
+            Tools
+          </p>
+          <ul className="space-y-1">{toolItems.map(renderItem)}</ul>
+        </div>
+      </nav>
+
+      <div className="p-4 space-y-3 border-t border-white/5">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+          <div className="w-9 h-9 rounded-md bg-gradient-to-br from-[#ff2bd6] to-[#9b5cff] flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-[#ff2bd6]/30">
             {role === 'ADMIN' ? 'RT' : 'VH'}
           </div>
           <div className="overflow-hidden">
-            <p className="text-[10px] font-bold truncate tracking-widest uppercase text-slate-200">{role === 'ADMIN' ? 'Root Terminal' : 'Verified Host'}</p>
-            <p className="text-[8px] text-slate-600 truncate font-label tracking-wide">SECURE LINK ENCRYPTED</p>
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-white">
+              {role === 'ADMIN' ? 'Root Terminal' : 'Verified Host'}
+            </p>
+            <p className="text-[8px] text-[#bba8d6]/45 font-label tracking-wider uppercase">
+              Secure link · encrypted
+            </p>
           </div>
         </div>
+
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5 hover:bg-[#ff3b5c]/10 hover:border-[#ff3b5c]/30 transition-all group"
+          data-testid="sidebar-logout"
+        >
+          <div className="flex items-center gap-3">
+            <LogOut size={15} className="text-[#bba8d6]/60 group-hover:text-[#ff3b5c] transition-colors" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.22em] font-label text-[#bba8d6]/70 group-hover:text-[#ff3b5c]">
+              End Session
+            </span>
+          </div>
+        </button>
       </div>
     </aside>
   );
-};
+});
+
+Sidebar.displayName = 'Sidebar';

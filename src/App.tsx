@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Bell, Calendar as CalendarIcon, X } from 'lucide-react';
+
 import { Sidebar } from './components/Navigation';
 import { AdminQueue } from './components/AdminQueue';
 import { UserRegistry } from './components/UserRegistry';
@@ -13,40 +16,42 @@ import { Discover } from './components/Discover';
 import { ProfileView } from './components/ProfileView';
 import { BottomNav } from './components/BottomNav';
 import { Login } from './components/Login';
+import { Logo } from './components/Logo';
 import { UserRole, UserProfile, Party } from './types';
-import { AnimatePresence, motion } from 'motion/react';
-import { Bell, Calendar as CalendarIcon, X } from 'lucide-react';
 import { generateGoogleCalendarLink } from './services/calendar';
 
-// Mock Data
+// ---------------- Mock Data ----------------
 const MOCK_USERS: UserProfile[] = [
   {
     uid: '1',
-    email: 'admin@vibecheck.io',
+    email: 'admin@rixzla.io',
     nickname: 'admin_portal',
     role: 'ADMIN',
     isVerified: true,
-    photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=150&h=150',
-    createdAt: Date.now()
+    photoURL:
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=150&h=150',
+    createdAt: Date.now(),
   },
   {
     uid: '2',
-    email: 'stellar@vibecheck.io',
+    email: 'stellar@rixzla.io',
     nickname: 'StellarVibe',
     role: 'INFLUENCER',
     isVerified: true,
-    photoURL: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?fit=crop&w=150&h=150',
-    createdAt: Date.now()
+    photoURL:
+      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?fit=crop&w=150&h=150',
+    createdAt: Date.now(),
   },
   {
     uid: '3',
-    email: 'user@vibecheck.io',
+    email: 'user@rixzla.io',
     nickname: 'julian_voss',
     role: 'USER',
     isVerified: false,
-    photoURL: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?fit=crop&w=150&h=150',
-    createdAt: Date.now()
-  }
+    photoURL:
+      'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?fit=crop&w=150&h=150',
+    createdAt: Date.now(),
+  },
 ];
 
 const MOCK_PARTIES: Party[] = [
@@ -55,67 +60,77 @@ const MOCK_PARTIES: Party[] = [
     hostId: '2',
     hostName: 'Lumina Entertainment',
     name: 'NEON VOID: SYNESTHESIA',
-    description: 'An immersive sensory experience at the intersection of digital art and industrial techno. Featuring a 360-degree LED installation and spatial audio from internationally acclaimed DJs.',
-    date: 'OCT 28, 2023',
+    description:
+      'An immersive sensory experience at the intersection of digital art and industrial techno. 360° LED installation, spatial audio, internationally acclaimed DJs.',
+    date: 'OCT 28, 2026',
     time: '22:00',
     location: 'Soundstage London',
     status: 'PENDING',
-    posterURL: 'https://images.unsplash.com/photo-1514525253361-bee8718a300c?fit=crop&w=800&q=80',
+    posterURL:
+      'https://images.unsplash.com/photo-1514525253361-bee8718a300c?fit=crop&w=800&q=80',
     capacity: 200,
     ticketsSold: 0,
     price: 45,
-    createdAt: Date.now()
+    createdAt: Date.now(),
   },
   {
     id: 'p2',
     hostId: '2',
     hostName: 'Lumina Entertainment',
     name: 'ELECTRIC FLUX',
-    description: 'Intense close-up of a high-tech DJ controller in a dark club, illuminated by vibrant neon pink and violet light.',
-    date: 'NOV 05, 2023',
+    description:
+      'Intense close-up sensorial techno: high-tech DJ controllers in a dark club, illuminated by vibrant neon pink and violet light.',
+    date: 'NOV 05, 2026',
     time: '23:30',
     location: 'District 42',
     status: 'APPROVED',
-    posterURL: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?fit=crop&w=800&q=80',
+    posterURL:
+      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?fit=crop&w=800&q=80',
     capacity: 500,
     ticketsSold: 450,
     price: 45,
-    qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://vibecheck.io/p/p2',
-    createdAt: Date.now()
+    qrCode:
+      'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://rixzla.io/p/p2',
+    createdAt: Date.now(),
   },
   {
     id: 'p3',
     hostId: '2',
     hostName: 'Stellar Events',
     name: 'VELVET SKIES',
-    description: 'A sophisticated luxury rooftop bar at dusk, overlooking a sprawling city skyline.',
-    date: 'NOV 12, 2023',
+    description:
+      'A sophisticated luxury rooftop bar at dusk, overlooking a sprawling city skyline. House. Disco. View.',
+    date: 'NOV 12, 2026',
     time: '21:00',
     location: 'The Zenith Lounge',
     status: 'APPROVED',
-    posterURL: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?fit=crop&w=800&q=80',
+    posterURL:
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?fit=crop&w=800&q=80',
     capacity: 100,
     ticketsSold: 88,
     price: 120,
-    qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://vibecheck.io/p/p3',
-    createdAt: Date.now()
+    qrCode:
+      'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://rixzla.io/p/p3',
+    createdAt: Date.now(),
   },
   {
     id: 'p4',
     hostId: '2',
     hostName: 'Underground Records',
     name: 'CHROME PULSE',
-    description: 'Experience the pulse of the underground with techno legends.',
-    date: 'NOV 19, 2023',
+    description:
+      'Experience the pulse of the underground with techno legends. Strict door. Dark room. Heavy bass.',
+    date: 'NOV 19, 2026',
     time: '02:00',
     location: 'The Vault',
     status: 'PENDING',
-    posterURL: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?fit=crop&w=800&q=80',
+    posterURL:
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?fit=crop&w=800&q=80',
     capacity: 300,
     ticketsSold: 0,
     price: 35,
-    createdAt: Date.now()
-  }
+    createdAt: Date.now(),
+  },
 ];
 
 export default function App() {
@@ -124,96 +139,127 @@ export default function App() {
   const [parties, setParties] = useState<Party[]>(MOCK_PARTIES);
   const [currentView, setCurrentView] = useState('discover');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [activeNotifications, setActiveNotifications] = useState<{id: string, message: string}[]>([]);
+  const [activeNotifications, setActiveNotifications] = useState<
+    { id: string; message: string }[]
+  >([]);
 
-  const handleAddToCalendar = (party: Party) => {
+  const approvedParties = useMemo(
+    () => parties.filter((p) => p.status === 'APPROVED'),
+    [parties]
+  );
+
+  const handleAddToCalendar = useCallback((party: Party) => {
     window.open(generateGoogleCalendarLink(party), '_blank');
     setShowNotifications(false);
-  };
+  }, []);
 
-  const notifyUser = (message: string) => {
-    const id = Date.now().toString();
-    setActiveNotifications(prev => [...prev, { id, message }]);
+  const notifyUser = useCallback((message: string) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setActiveNotifications((prev) => [...prev, { id, message }]);
     setTimeout(() => {
-      setActiveNotifications(prev => prev.filter(n => n.id !== id));
-    }, 5000);
-  };
+      setActiveNotifications((prev) => prev.filter((n) => n.id !== id));
+    }, 4500);
+  }, []);
 
-  // Handle Login
-  const handleLogin = (role: UserRole) => {
-    const user = allUsers.find(u => u.role === role) || allUsers[2];
-    setCurrentUser(user);
-    if (role === 'ADMIN') setCurrentView('queue');
-    else if (role === 'INFLUENCER') setCurrentView('influencer');
-    else setCurrentView('discover');
-  };
+  const handleLogin = useCallback(
+    (role: UserRole) => {
+      const user = allUsers.find((u) => u.role === role) || allUsers[2];
+      setCurrentUser(user);
+      if (role === 'ADMIN') setCurrentView('queue');
+      else if (role === 'INFLUENCER') setCurrentView('influencer');
+      else setCurrentView('discover');
+    },
+    [allUsers]
+  );
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setCurrentUser(null);
     setCurrentView('discover');
-  };
+  }, []);
 
-  // Handle Approval (Calls Express Server for QR)
-  const handleApprove = async (partyId: string) => {
-    try {
-      const party = parties.find(p => p.id === partyId);
-      if (!party) return;
+  const handleApprove = useCallback(
+    async (partyId: string) => {
+      try {
+        const party = parties.find((p) => p.id === partyId);
+        if (!party) return;
 
-      const response = await fetch('/api/admin/approve-party', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          partyId: party.id,
-          partyLink: `https://vibecheck.io/p/${party.id}`
-        })
-      });
+        const response = await fetch('/api/admin/approve-party', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            partyId: party.id,
+            partyLink: `https://rixzla.io/p/${party.id}`,
+          }),
+        });
 
-      const data = await response.json();
-      
-      if (data.success) {
-        setParties(current => current.map(p => 
-          p.id === partyId 
-            ? { ...p, status: 'APPROVED' as const, qrCode: data.qrCode }
-            : p
-        ));
-        notifyUser(`Party "${party.name}" has been approved! QR Code generated.`);
+        const data = await response.json();
+
+        if (data.success) {
+          setParties((current) =>
+            current.map((p) =>
+              p.id === partyId
+                ? { ...p, status: 'APPROVED' as const, qrCode: data.qrCode }
+                : p
+            )
+          );
+          notifyUser(`"${party.name}" approved · QR generated`);
+        }
+      } catch (err) {
+        console.error('Failed to approve party:', err);
+        notifyUser('Approval failed · check connection');
       }
-    } catch (err) {
-      console.error('Failed to approve party:', err);
-    }
-  };
+    },
+    [parties, notifyUser]
+  );
 
-  const handleReject = async (partyId: string, reason: string) => {
-    setParties(current => current.map(p => 
-      p.id === partyId 
-        ? { ...p, status: 'REJECTED' as const, rejectionReason: reason }
-        : p
-    ));
-    const party = parties.find(p => p.id === partyId);
-    if (party) {
-        notifyUser(`Party "${party.name}" was rejected. Reason: ${reason}`);
-    }
-  };
+  const handleReject = useCallback(
+    async (partyId: string, reason: string) => {
+      const party = parties.find((p) => p.id === partyId);
+      setParties((current) =>
+        current.map((p) =>
+          p.id === partyId
+            ? { ...p, status: 'REJECTED' as const, rejectionReason: reason }
+            : p
+        )
+      );
+      if (party) notifyUser(`"${party.name}" rejected · ${reason}`);
+    },
+    [parties, notifyUser]
+  );
 
-  const handleRequestVerification = (userId: string) => {
-    setAllUsers(prev => prev.map(u => 
-        u.uid === userId ? { ...u, isVerificationPending: true } : u
-    ));
-    if (currentUser?.uid === userId) {
-        setCurrentUser(prev => prev ? { ...prev, isVerificationPending: true } : null);
-    }
-    notifyUser("Verification request submitted protocol.");
-  };
+  const handleRequestVerification = useCallback(
+    (userId: string) => {
+      setAllUsers((prev) =>
+        prev.map((u) =>
+          u.uid === userId ? { ...u, isVerificationPending: true } : u
+        )
+      );
+      setCurrentUser((prev) =>
+        prev && prev.uid === userId ? { ...prev, isVerificationPending: true } : prev
+      );
+      notifyUser('Verification request submitted');
+    },
+    [notifyUser]
+  );
 
-  const handleApproveVerification = (userId: string) => {
-    setAllUsers(prev => prev.map(u => 
-        u.uid === userId ? { ...u, isVerified: true, isVerificationPending: false } : u
-    ));
-    if (currentUser?.uid === userId) {
-        setCurrentUser(prev => prev ? { ...prev, isVerified: true, isVerificationPending: false } : null);
-    }
-    notifyUser("User verification protocol authorized.");
-  };
+  const handleApproveVerification = useCallback(
+    (userId: string) => {
+      setAllUsers((prev) =>
+        prev.map((u) =>
+          u.uid === userId
+            ? { ...u, isVerified: true, isVerificationPending: false }
+            : u
+        )
+      );
+      setCurrentUser((prev) =>
+        prev && prev.uid === userId
+          ? { ...prev, isVerified: true, isVerificationPending: false }
+          : prev
+      );
+      notifyUser('Identity authorized · welcome aboard');
+    },
+    [notifyUser]
+  );
 
   if (!currentUser) {
     return <Login onLogin={handleLogin} />;
@@ -223,129 +269,188 @@ export default function App() {
     switch (currentView) {
       case 'queue':
         return (
-          <AdminQueue 
-            pendingParties={parties.filter(p => p.status === 'PENDING')} 
+          <AdminQueue
+            pendingParties={parties.filter((p) => p.status === 'PENDING')}
             onApprove={handleApprove}
             onReject={handleReject}
           />
         );
       case 'registry':
         return (
-          <UserRegistry 
-            users={allUsers} 
+          <UserRegistry
+            users={allUsers}
             onApproveVerification={handleApproveVerification}
           />
         );
       case 'qr':
-        return <QRManagement approvedParties={parties.filter(p => p.status === 'APPROVED')} />;
+        return <QRManagement approvedParties={approvedParties} />;
       case 'influencer':
         return (
-          <InfluencerDashboard 
-            user={currentUser} 
-            parties={parties.filter(p => p.hostId === currentUser.uid)}
-            onCreateEvent={() => alert('Event creation modal would open here')}
+          <InfluencerDashboard
+            user={currentUser}
+            parties={parties.filter((p) => p.hostId === currentUser.uid)}
+            onCreateEvent={() => notifyUser('Event creation modal coming soon')}
             onLogout={handleLogout}
             onRequestVerification={() => handleRequestVerification(currentUser.uid)}
           />
         );
       case 'discover':
-        return <Discover parties={parties} onBook={(p) => alert(`Booking for ${p.name}`)} />;
+        return (
+          <Discover
+            parties={parties}
+            onBook={(p) => notifyUser(`Requesting entry to ${p.name}…`)}
+          />
+        );
       case 'profile':
         return <ProfileView user={currentUser} onLogout={handleLogout} />;
       default:
-        return <Discover parties={parties} onBook={(p) => alert(`Booking for ${p.name}`)} />;
+        return (
+          <Discover
+            parties={parties}
+            onBook={(p) => notifyUser(`Requesting entry to ${p.name}…`)}
+          />
+        );
     }
   };
 
+  const isConsoleRole =
+    currentUser.role === 'ADMIN' || currentUser.role === 'INFLUENCER';
+
   return (
-    <div className="min-h-screen flex text-slate-100 bg-slate-950">
-      {/* Sidebar for Admin/Influencer on Desktop */}
-      {(currentUser.role === 'ADMIN' || currentUser.role === 'INFLUENCER') && (
-        <Sidebar 
-          role={currentUser.role} 
-          currentView={currentView} 
-          onViewChange={setCurrentView} 
+    <div
+      className="min-h-screen flex text-white relative"
+      data-testid="app-root"
+    >
+      {isConsoleRole && (
+        <Sidebar
+          role={currentUser.role}
+          currentView={currentView}
+          onViewChange={setCurrentView}
           onLogout={handleLogout}
         />
       )}
 
-      {/* Main Content Area */}
-      <main className={`flex-1 flex flex-col min-h-screen relative overflow-x-hidden ${
-        (currentUser.role === 'ADMIN' || currentUser.role === 'INFLUENCER') ? 'ml-72' : ''
-      }`}>
-        {/* Simple Toast-like notification */}
-        <div className="fixed top-24 right-8 z-[100] space-y-2">
-            {activeNotifications.map(nav => (
-                <motion.div 
-                    key={nav.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="bg-indigo-600/90 backdrop-blur-md text-white px-6 py-3 rounded border border-indigo-400/30 shadow-xl font-label text-[10px] uppercase tracking-widest font-bold"
-                >
-                    {nav.message}
-                </motion.div>
+      <main
+        className={`flex-1 flex flex-col min-h-screen relative overflow-x-hidden ${
+          isConsoleRole ? 'lg:ml-72' : ''
+        }`}
+      >
+        {/* Toast notifications */}
+        <div className="fixed top-24 right-6 z-[100] space-y-2 pointer-events-none">
+          <AnimatePresence>
+            {activeNotifications.map((nav) => (
+              <motion.div
+                key={nav.id}
+                layout
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 24 }}
+                className="glass-card pointer-events-auto px-5 py-3 rounded-full text-white font-label text-[10px] uppercase tracking-[0.22em] font-bold shadow-[0_20px_50px_-12px_rgba(255,43,214,0.6)] border-neon-magenta"
+                data-testid="toast-notification"
+              >
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#ff2bd6] mr-2 align-middle animate-pulse" />
+                {nav.message}
+              </motion.div>
             ))}
+          </AnimatePresence>
         </div>
-        {/* Mobile-friendly Header for regular users */}
+
+        {/* Mobile/User header */}
         {currentUser.role === 'USER' && (
-          <header className="h-20 flex justify-between items-center px-8 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-40">
-            <h1 className="font-display text-4xl font-bold text-indigo-500 uppercase tracking-tighter">X-CLUSIV</h1>
-            <div className="flex items-center gap-6">
+          <header
+            className="h-[72px] flex justify-between items-center px-5 md:px-8 bg-[#080410]/70 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40"
+            data-testid="user-header"
+          >
+            <Logo size="sm" />
+
+            <div className="flex items-center gap-4">
               <div className="relative">
-                <Bell 
-                  className={`cursor-pointer transition-colors ${showNotifications ? 'text-indigo-400' : 'text-slate-500 hover:text-indigo-400'}`} 
-                  size={24} 
-                  onClick={() => setShowNotifications(!showNotifications)}
-                />
-                {parties.some(p => p.status === 'APPROVED') && (
-                  <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
+                <button
+                  onClick={() => setShowNotifications((s) => !s)}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border ${
+                    showNotifications
+                      ? 'border-[#ff2bd6]/60 text-[#ff5cc4] bg-[#ff2bd6]/10'
+                      : 'border-white/5 text-[#bba8d6]/65 hover:text-white hover:border-[#ff5cc4]/40'
+                  }`}
+                  aria-label="Notifications"
+                  data-testid="user-bell"
+                >
+                  <Bell size={17} />
+                </button>
+                {approvedParties.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#b6ff3c] rounded-full shadow-[0_0_8px_rgba(182,255,60,0.8)]" />
                 )}
-                
+
                 <AnimatePresence>
                   {showNotifications && (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                      initial={{ opacity: 0, scale: 0.96, y: 8 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                      className="absolute right-0 mt-6 w-80 bg-slate-900 border border-slate-800 rounded p-4 z-50 overflow-hidden shadow-2xl"
+                      exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                      className="absolute right-0 mt-3 w-[320px] glass-card rounded-2xl p-5 z-50 overflow-hidden"
+                      data-testid="user-notifications"
                     >
-                      <div className="flex justify-between items-center mb-6">
-                        <span className="font-label text-[10px] uppercase tracking-widest font-bold text-slate-500">Live Protocols</span>
-                        <X size={16} className="cursor-pointer text-slate-500 hover:text-white" onClick={() => setShowNotifications(false)} />
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="font-label text-[10px] uppercase tracking-[0.3em] font-bold text-[#bba8d6]/55">
+                          Live Now
+                        </span>
+                        <button
+                          onClick={() => setShowNotifications(false)}
+                          className="text-[#bba8d6]/55 hover:text-white"
+                          aria-label="Close"
+                        >
+                          <X size={15} />
+                        </button>
                       </div>
-                      <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-                        {parties.filter(p => p.status === 'APPROVED').map(party => (
-                          <div key={party.id} className="p-4 bg-slate-950 border border-slate-800/80 rounded space-y-3 group hover:border-indigo-500/30 transition-all">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-bold font-display text-sm uppercase tracking-tight line-clamp-1 text-slate-200">{party.name}</p>
-                                <p className="font-label text-[9px] text-indigo-400/60 uppercase tracking-widest mt-1">{party.date} • {party.time}</p>
-                              </div>
-                              <button 
-                                onClick={() => handleAddToCalendar(party)}
-                                className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-sm hover:bg-indigo-500 hover:text-white transition-all shadow-sm"
-                                title="Add to Calendar"
-                              >
-                                <CalendarIcon size={14} />
-                              </button>
+                      <div className="space-y-2 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                        {approvedParties.map((party) => (
+                          <div
+                            key={party.id}
+                            className="p-3 rounded-xl bg-white/[0.03] border border-white/5 flex justify-between items-center group hover:border-[#ff5cc4]/30 transition-all"
+                          >
+                            <div className="min-w-0">
+                              <p className="font-bold font-display text-sm uppercase tracking-tight text-white truncate">
+                                {party.name}
+                              </p>
+                              <p className="font-label text-[9px] text-[#ff5cc4] uppercase tracking-[0.22em] mt-1">
+                                {party.date} · {party.time}
+                              </p>
                             </div>
+                            <button
+                              onClick={() => handleAddToCalendar(party)}
+                              className="ml-3 p-2.5 bg-[#ff2bd6]/10 text-[#ff5cc4] rounded-full hover:bg-[#ff2bd6] hover:text-white transition-all"
+                              title="Add to Calendar"
+                              data-testid={`notify-calendar-${party.id}`}
+                            >
+                              <CalendarIcon size={13} />
+                            </button>
                           </div>
                         ))}
-                        {parties.filter(p => p.status === 'APPROVED').length === 0 && (
-                          <p className="text-center py-6 text-[10px] text-slate-600 uppercase tracking-widest font-label font-bold">No active protocols.</p>
+                        {approvedParties.length === 0 && (
+                          <p className="text-center py-6 text-[10px] text-[#bba8d6]/45 uppercase tracking-widest font-label font-bold">
+                            No active events
+                          </p>
                         )}
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
-              <div 
-                className="w-10 h-10 rounded-sm border border-slate-800 overflow-hidden cursor-pointer hover:border-indigo-500 transition-colors"
+
+              <button
                 onClick={() => setCurrentView('profile')}
+                className="w-10 h-10 rounded-full overflow-hidden border border-[#ff5cc4]/30 hover:border-[#ff2bd6] transition-colors shadow-[0_0_18px_-4px_rgba(255,43,214,0.6)]"
+                aria-label="Profile"
+                data-testid="user-avatar"
               >
-                <img src={currentUser.photoURL} alt="Me" className="w-full h-full object-cover" />
-              </div>
+                <img
+                  src={currentUser.photoURL}
+                  alt="Me"
+                  loading="eager"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />
+              </button>
             </div>
           </header>
         )}
@@ -353,17 +458,16 @@ export default function App() {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
             className="flex-1 flex flex-col"
           >
             {renderContent()}
           </motion.div>
         </AnimatePresence>
 
-        {/* Bottom Nav for regular users */}
         {currentUser.role === 'USER' && (
           <BottomNav currentTab={currentView} onTabChange={setCurrentView} />
         )}

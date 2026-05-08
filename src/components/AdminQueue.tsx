@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Check, X, SkipForward, Maximize, Calendar, User, Ticket, Zap } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Check, SkipForward, Calendar, MapPin, DollarSign, Maximize2 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Party } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
 
 interface AdminQueueProps {
   pendingParties: Party[];
@@ -16,150 +16,188 @@ export const AdminQueue: React.FC<AdminQueueProps> = ({ pendingParties, onApprov
 
   const currentParty = pendingParties[currentIndex];
 
-  const handleNext = () => {
-    if (currentIndex < pendingParties.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setRejectionReason('');
-    }
-  };
+  const handleNext = useCallback(() => {
+    setCurrentIndex((i) => (i < pendingParties.length - 1 ? i + 1 : i));
+    setRejectionReason('');
+  }, [pendingParties.length]);
+
+  const handleApprove = useCallback(async () => {
+    if (!currentParty) return;
+    setIsApproving(true);
+    await onApprove(currentParty.id);
+    setIsApproving(false);
+  }, [currentParty, onApprove]);
 
   if (!currentParty) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-slate-950">
-        <div className="w-24 h-24 rounded-sm bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-8 relative">
-          <div className="absolute inset-0 bg-indigo-500/10 blur-xl"></div>
-          <Check className="text-indigo-400 relative z-10" size={48} />
+      <div
+        className="flex-1 flex flex-col items-center justify-center text-center p-12 relative z-10"
+        data-testid="queue-empty"
+      >
+        <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-[#ff2bd6]/15 to-[#2bf0ff]/15 border border-[#ff5cc4]/30 flex items-center justify-center mb-8 relative neon-ring">
+          <Check className="text-white relative z-10" size={48} />
         </div>
-        <h2 className="text-4xl font-display font-bold mb-4 uppercase tracking-tighter">Queue Decrypted</h2>
-        <p className="text-slate-500 font-sans text-sm max-w-xs uppercase tracking-widest font-bold opacity-60">
-          All pending node requests have been synchronized and authorized.
+        <h2 className="text-4xl font-display font-bold mb-3 uppercase tracking-tighter text-white">
+          Queue Cleared
+        </h2>
+        <p className="text-[#bba8d6]/60 font-sans text-sm max-w-sm uppercase tracking-widest font-bold">
+          All pending events have been reviewed and authorized.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen">
-      <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-950/50 backdrop-blur-md sticky top-0 z-40">
+    <div className="flex-1 flex flex-col min-h-screen relative z-10" data-testid="admin-queue">
+      <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-[#080410]/60 backdrop-blur-md sticky top-0 z-40">
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-light font-display">Party Approval <span className="text-slate-500">/ Queue</span></h2>
-          <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 text-[10px] font-bold rounded border border-amber-500/20 uppercase tracking-widest">
-            {pendingParties.length} PENDING
-          </span>
+          <h2 className="text-xl font-display font-bold uppercase tracking-tight text-white">
+            Approval <span className="text-[#ff5cc4]">Queue</span>
+          </h2>
+          <span className="chip chip-pending">{pendingParties.length} Pending</span>
         </div>
-        <div className="flex items-center gap-6">
-          <div className="h-6 w-[1px] bg-slate-800"></div>
-          <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 rounded text-sm font-semibold transition-all shadow-lg shadow-indigo-600/10 font-label uppercase tracking-widest">
-            Sync Registry
-          </button>
+        <div className="font-label text-[10px] uppercase tracking-[0.3em] text-[#bba8d6]/60">
+          Reviewing <span className="text-white">{currentIndex + 1}</span> / {pendingParties.length}
         </div>
       </header>
 
-      <div className="flex-1 grid grid-cols-12 gap-8 p-8 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-900/50 via-slate-950 to-slate-950 overflow-hidden">
-        {/* Left Pane: Poster Preview & Quick Stats */}
-        <section className="col-span-4 flex flex-col gap-6 h-full">
-          <div className="flex-1 bg-slate-950 border border-slate-800 rounded p-1 relative group overflow-hidden">
-            <img 
-              src={currentParty.posterURL} 
-              alt="Party Poster" 
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <button className="bg-white/5 backdrop-blur-xl px-4 py-2 rounded border border-white/10 text-[10px] font-label uppercase tracking-widest">
-                Enlarge Asset
-              </button>
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 md:p-8">
+        {/* Poster */}
+        <section className="lg:col-span-5 flex flex-col gap-5">
+          <motion.div
+            layout
+            key={currentParty.id}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-card rounded-2xl p-2 relative group overflow-hidden"
+          >
+            <div className="aspect-[3/4] rounded-xl overflow-hidden">
+              <img
+                src={currentParty.posterURL}
+                alt="Party Poster"
+                loading="eager"
+                decoding="async"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
             </div>
-          </div>
-          
-          <div className="bg-slate-900/40 border border-slate-800 rounded p-6">
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-4 font-label">Asset Validation</p>
-            <div className="space-y-4">
+            <button
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              aria-label="Enlarge"
+            >
+              <Maximize2 size={14} />
+            </button>
+          </motion.div>
+
+          <div className="glass-panel rounded-2xl p-5">
+            <p className="text-[10px] text-[#bba8d6]/55 uppercase tracking-[0.3em] mb-4 font-label">
+              Asset Validation
+            </p>
+            <div className="space-y-3">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">AI Compliance</span>
-                <span className="text-indigo-400 font-bold">88%</span>
+                <span className="text-[#bba8d6]/80">AI Compliance</span>
+                <span className="text-[#2bf0ff] font-bold">88%</span>
               </div>
-              <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-                <motion.div 
+              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: '88%' }}
-                  className="h-full bg-indigo-500 shadow-[0_0_8px_rgba(79,70,229,0.5)]"
+                  transition={{ duration: 0.8 }}
+                  className="h-full rounded-full bg-gradient-to-r from-[#ff2bd6] via-[#9b5cff] to-[#2bf0ff] shadow-[0_0_12px_rgba(255,43,214,0.6)]"
                 />
               </div>
             </div>
           </div>
         </section>
 
-        {/* Right Pane: Event Logic Review */}
-        <section className="col-span-8 flex flex-col gap-6 h-full overflow-y-auto pr-2 custom-scrollbar">
-          <div className="bg-slate-900/40 border border-slate-800 rounded p-8">
-            <div className="flex justify-between items-start mb-10">
+        {/* Review */}
+        <section className="lg:col-span-7 flex flex-col gap-5 overflow-y-auto pr-1 custom-scrollbar">
+          <div className="glass-card rounded-2xl p-7 md:p-8">
+            <div className="flex justify-between items-start gap-4 mb-8">
               <div>
-                <h3 className="text-3xl font-display font-bold tracking-tight mb-2 uppercase">{currentParty.name}</h3>
-                <p className="text-slate-400 text-sm font-label uppercase tracking-wider">
-                  Host: <span className="text-indigo-400">@{currentParty.hostName.toLowerCase().replace(/\s+/g, '_')}</span>
+                <h3 className="font-display text-3xl md:text-4xl text-white uppercase tracking-tight leading-none">
+                  {currentParty.name}
+                </h3>
+                <p className="text-[#bba8d6]/70 text-sm font-label uppercase tracking-wider mt-3">
+                  Host:{' '}
+                  <span className="text-[#ff5cc4]">
+                    @{currentParty.hostName.toLowerCase().replace(/\s+/g, '_')}
+                  </span>
                 </p>
               </div>
-              <div className="flex gap-3">
-                <button 
-                  onClick={handleNext}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-[10px] font-bold uppercase tracking-wider transition-all"
-                >
-                  Skip
-                </button>
+              <button
+                onClick={handleNext}
+                className="btn-ghost"
+                data-testid="queue-skip"
+              >
+                <SkipForward size={14} /> Skip
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+              <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4">
+                <div className="flex items-center gap-2 text-[#ff5cc4] mb-2">
+                  <MapPin size={13} />
+                  <p className="text-[10px] uppercase tracking-[0.25em] font-label font-bold">Venue</p>
+                </div>
+                <p className="text-sm text-white">{currentParty.location}</p>
+              </div>
+              <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4">
+                <div className="flex items-center gap-2 text-[#2bf0ff] mb-2">
+                  <DollarSign size={13} />
+                  <p className="text-[10px] uppercase tracking-[0.25em] font-label font-bold">Door</p>
+                </div>
+                <p className="text-sm text-white">${currentParty.price?.toFixed(2)}</p>
+              </div>
+              <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4">
+                <div className="flex items-center gap-2 text-[#9b5cff] mb-2">
+                  <Calendar size={13} />
+                  <p className="text-[10px] uppercase tracking-[0.25em] font-label font-bold">When</p>
+                </div>
+                <p className="text-sm text-white">
+                  {currentParty.date} · {currentParty.time}
+                </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-8 mb-10">
-              <div className="border-l-2 border-indigo-500 pl-4 py-1">
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1 font-label">Location</p>
-                <p className="text-sm font-medium">{currentParty.location}</p>
-              </div>
-              <div className="border-l-2 border-slate-700 pl-4 py-1">
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1 font-label">Base API Rate</p>
-                <p className="text-sm font-medium text-indigo-400">${currentParty.price?.toFixed(2)}</p>
-              </div>
-              <div className="border-l-2 border-slate-700 pl-4 py-1">
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1 font-label">Identity</p>
-                <p className="text-sm font-medium italic">{currentParty.date} • {currentParty.time}</p>
-              </div>
-            </div>
-
-            <div className="bg-slate-950 border border-slate-800 rounded p-6 mb-10">
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest mb-4 block font-label">Description Payload</span>
-              <p className="text-sm text-slate-400 leading-relaxed font-sans">
+            <div className="rounded-xl bg-[#080410]/70 border border-white/5 p-5 mb-7">
+              <span className="text-[10px] text-[#bba8d6]/55 uppercase tracking-[0.3em] mb-3 block font-label font-bold">
+                Description
+              </span>
+              <p className="text-sm text-[#e8def8]/90 leading-relaxed font-sans">
                 {currentParty.description}
               </p>
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded p-6 mb-10">
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest mb-4 block font-label">Rejection Log</span>
-              <textarea 
-                className="w-full bg-slate-950 border border-slate-800 rounded p-4 text-sm text-slate-300 focus:outline-none focus:border-indigo-500 transition-colors"
-                placeholder="Reason for code rejection..."
+            <div className="rounded-xl bg-[#080410]/70 border border-white/5 p-5 mb-7">
+              <span className="text-[10px] text-[#bba8d6]/55 uppercase tracking-[0.3em] mb-3 block font-label font-bold">
+                Rejection Reason
+              </span>
+              <textarea
+                className="w-full bg-[#11091c]/80 border border-white/5 rounded-lg p-4 text-sm text-white placeholder:text-[#bba8d6]/40 transition-colors"
+                placeholder="Add a clear reason for the host…"
                 rows={2}
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
+                data-testid="queue-rejection-reason"
               />
             </div>
 
-            <div className="mt-auto flex gap-4 pt-4">
-              <button 
+            <div className="flex gap-4 pt-2">
+              <button
                 disabled={!rejectionReason || isApproving}
                 onClick={() => onReject(currentParty.id, rejectionReason)}
-                className="flex-1 py-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded text-xs font-bold uppercase tracking-wider hover:bg-red-500/20 transition-all disabled:opacity-20"
+                className="flex-1 py-4 rounded-full bg-[#ff3b5c]/10 text-[#ff3b5c] border border-[#ff3b5c]/30 text-xs font-bold uppercase tracking-[0.22em] hover:bg-[#ff3b5c]/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed font-label"
+                data-testid="queue-reject"
               >
-                Reject Code
+                Reject
               </button>
-              <button 
+              <button
                 disabled={isApproving}
-                onClick={async () => {
-                  setIsApproving(true);
-                  await onApprove(currentParty.id);
-                  setIsApproving(false);
-                }}
-                className="flex-[2] py-4 bg-emerald-500 text-white rounded text-xs font-bold uppercase tracking-wider hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                onClick={handleApprove}
+                className="btn-neon flex-[2]"
+                data-testid="queue-approve"
               >
-                {isApproving ? 'Executing...' : 'Approve & Trigger QR'}
+                {isApproving ? 'Generating QR…' : 'Approve & Trigger QR'}
               </button>
             </div>
           </div>
