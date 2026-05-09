@@ -33,5 +33,9 @@ export interface Party {
   ticketsSold?: number;
   price?: number;
   venue?: string;
+  genre?: string;
+  dressCode?: string;
+  ageRestriction?: number;
+  contactEmail?: string;
   createdAt: number;
 }
