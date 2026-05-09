@@ -16,6 +16,7 @@ import { Discover } from './components/Discover';
 import { ProfileView } from './components/ProfileView';
 import { BottomNav } from './components/BottomNav';
 import { Login } from './components/Login';
+import { Register } from './components/Register';
 import { Logo } from './components/Logo';
 import { UserRole, UserProfile, Party } from './types';
 import { generateGoogleCalendarLink } from './services/calendar';
@@ -142,6 +143,8 @@ export default function App() {
   const [activeNotifications, setActiveNotifications] = useState<
     { id: string; message: string }[]
   >([]);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registeringRole, setRegisteringRole] = useState<UserRole | null>(null);
 
   const approvedParties = useMemo(
     () => parties.filter((p) => p.status === 'APPROVED'),
@@ -162,14 +165,70 @@ export default function App() {
   }, []);
 
   const handleLogin = useCallback(
-    (role: UserRole) => {
-      const user = allUsers.find((u) => u.role === role) || allUsers[2];
-      setCurrentUser(user);
-      if (role === 'ADMIN') setCurrentView('queue');
-      else if (role === 'INFLUENCER') setCurrentView('influencer');
-      else setCurrentView('discover');
+    (username: string, password: string, role: UserRole) => {
+      // First check if user exists with credentials
+      const registeredUser = allUsers.find(
+        (u) =>
+          u.nickname.toLowerCase() === username.toLowerCase() &&
+          (u as any).password === password &&
+          u.role === role
+      );
+
+      if (registeredUser) {
+        setCurrentUser(registeredUser);
+        if (role === 'ADMIN') setCurrentView('queue');
+        else if (role === 'INFLUENCER') setCurrentView('influencer');
+        else setCurrentView('discover');
+        return true;
+      }
+
+      // Fallback to mock users for demo
+      const mockUser = MOCK_USERS.find((u) => u.role === role);
+      if (mockUser && (username === 'demo' || username.toLowerCase() === 'admin_portal')) {
+        setCurrentUser(mockUser);
+        if (role === 'ADMIN') setCurrentView('queue');
+        else if (role === 'INFLUENCER') setCurrentView('influencer');
+        else setCurrentView('discover');
+        return true;
+      }
+
+      return false;
     },
     [allUsers]
+  );
+
+  const handleRegister = useCallback(
+    (userData: {
+      nickname: string;
+      email: string;
+      password: string;
+      phoneNumber: string;
+      role: UserRole;
+    }) => {
+      const newUser: any = {
+        uid: `user_${Date.now()}`,
+        email: userData.email,
+        nickname: userData.nickname,
+        role: userData.role,
+        password: userData.password,
+        whatsapp: userData.phoneNumber,
+        isVerified: userData.role === 'USER',
+        photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.nickname}`,
+        createdAt: Date.now(),
+      };
+
+      setAllUsers((prev) => [...prev, newUser]);
+      setCurrentUser(newUser);
+      notifyUser(`Welcome ${userData.nickname}! Account created successfully`);
+
+      if (userData.role === 'ADMIN') setCurrentView('queue');
+      else if (userData.role === 'INFLUENCER') setCurrentView('influencer');
+      else setCurrentView('discover');
+
+      setIsRegistering(false);
+      setRegisteringRole(null);
+    },
+    [notifyUser]
   );
 
   const handleLogout = useCallback(() => {
@@ -262,7 +321,28 @@ export default function App() {
   );
 
   if (!currentUser) {
-    return <Login onLogin={handleLogin} />;
+    if (isRegistering && registeringRole) {
+      return (
+        <Register
+          role={registeringRole}
+          onRegister={handleRegister}
+          onBackToLogin={() => {
+            setIsRegistering(false);
+            setRegisteringRole(null);
+          }}
+        />
+      );
+    }
+    return (
+      <Login
+        onLogin={handleLogin}
+        onRegisterClick={(role) => {
+          setIsRegistering(true);
+          setRegisteringRole(role);
+        }}
+        allUsers={allUsers as any}
+      />
+    );
   }
 
   const renderContent = () => {
