@@ -18,6 +18,13 @@ const PartyCard = React.memo(function PartyCard({
   party: Party;
   onCalendar: (p: Party) => void;
 }) {
+  const [isFavorited, setIsFavorited] = React.useState(false);
+
+  const handleFavorite = () => {
+    setIsFavorited(!isFavorited);
+    console.log(`Party ${party.name} ${!isFavorited ? 'saved' : 'unsaved'} to favorites`);
+  };
+
   return (
     <motion.div
       layout
@@ -40,10 +47,12 @@ const PartyCard = React.memo(function PartyCard({
           Live
         </div>
         <button
+          onClick={handleFavorite}
           className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-[#bba8d6]/70 hover:text-[#ff5cc4] hover:border-[#ff2bd6]/50 transition-all"
           aria-label="Save"
+          data-testid={`party-favorite-${party.id}`}
         >
-          <Heart size={15} />
+          <Heart size={15} fill={isFavorited ? 'currentColor' : 'none'} />
         </button>
       </div>
 

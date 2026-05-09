@@ -51,6 +51,29 @@ const ConnectRow: React.FC<ConnectRowProps> = ({ icon: Icon, label, value, accen
 );
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
+  const handleChangePhoto = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event: any) => {
+          console.log('Photo updated:', file.name);
+          // In a real app, you'd upload this to Firebase Storage
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleSettings = () => {
+    console.log('Opening system preferences');
+    // Navigate to settings page or open modal
+  };
+
   return (
     <main
       className="max-w-xl mx-auto px-5 py-10 space-y-10 pb-32 relative z-10"
@@ -71,8 +94,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
             />
           </div>
           <button
+            onClick={handleChangePhoto}
             className="absolute bottom-0 right-0 bg-gradient-to-br from-[#ff2bd6] to-[#9b5cff] text-white p-2.5 rounded-full shadow-xl hover:scale-105 transition-transform"
             aria-label="Change photo"
+            data-testid="profile-change-photo"
           >
             <Camera size={15} />
           </button>
@@ -124,6 +149,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
 
       <section className="space-y-3">
         <button
+          onClick={handleSettings}
           className="w-full flex items-center justify-between p-5 glass-card rounded-2xl hover:bg-white/[0.04] transition-colors group"
           data-testid="profile-settings"
         >

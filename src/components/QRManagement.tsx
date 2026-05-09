@@ -8,6 +8,7 @@ interface QRManagementProps {
 
 export const QRManagement: React.FC<QRManagementProps> = ({ approvedParties }) => {
   const [query, setQuery] = useState('');
+  const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -16,6 +17,29 @@ export const QRManagement: React.FC<QRManagementProps> = ({ approvedParties }) =
       (p) => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
     );
   }, [approvedParties, query]);
+
+  const handleGenerateQR = () => {
+    console.log('Generating new QR code for event');
+    // This would typically open a modal or navigate to a generation form
+    alert('New QR code generation initiated');
+  };
+
+  const handleOptionsMenu = (partyId: string) => {
+    setShowOptionsMenu(showOptionsMenu === partyId ? null : partyId);
+  };
+
+  const handleEditParty = (partyId: string) => {
+    console.log(`Edit party: ${partyId}`);
+    // Navigate to edit page or open edit modal
+  };
+
+  const handleDuplicateQR = (partyId: string) => {
+    console.log(`Duplicate QR code for party: ${partyId}`);
+  };
+
+  const handleArchiveQR = (partyId: string) => {
+    console.log(`Archive QR code for party: ${partyId}`);
+  };
 
   return (
     <div
@@ -56,7 +80,11 @@ export const QRManagement: React.FC<QRManagementProps> = ({ approvedParties }) =
               data-testid="qr-search"
             />
           </div>
-          <button className="btn-neon" data-testid="qr-generate-new">
+          <button 
+            onClick={handleGenerateQR}
+            className="btn-neon" 
+            data-testid="qr-generate-new"
+          >
             <PlusCircle size={14} />
             Generate
           </button>
@@ -67,7 +95,7 @@ export const QRManagement: React.FC<QRManagementProps> = ({ approvedParties }) =
         {filtered.map((party) => (
           <div
             key={party.id}
-            className="glass-card rounded-2xl p-6 group flex flex-col transition-all duration-500 hover:-translate-y-1"
+            className="glass-card rounded-2xl p-6 group flex flex-col transition-all duration-500 hover:-translate-y-1 relative"
             data-testid={`qr-card-${party.id}`}
           >
             <div className="flex justify-between items-start mb-6">
@@ -95,11 +123,44 @@ export const QRManagement: React.FC<QRManagementProps> = ({ approvedParties }) =
                 </div>
               </div>
               <button
+                onClick={() => handleOptionsMenu(party.id)}
                 className="p-2 text-[#bba8d6]/55 hover:text-[#ff5cc4] transition-colors"
                 aria-label="Options"
+                data-testid={`qr-options-${party.id}`}
               >
                 <MoreVertical size={18} />
               </button>
+              {showOptionsMenu === party.id && (
+                <div className="absolute top-12 right-0 bg-[#11091c]/95 border border-[#ff5cc4]/20 rounded-lg overflow-hidden z-10 min-w-max">
+                  <button
+                    onClick={() => {
+                      handleEditParty(party.id);
+                      setShowOptionsMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-[#bba8d6]/80 hover:text-white hover:bg-[#ff2bd6]/10 transition-colors"
+                  >
+                    Edit Event
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleDuplicateQR(party.id);
+                      setShowOptionsMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-[#bba8d6]/80 hover:text-white hover:bg-[#ff2bd6]/10 transition-colors border-t border-[#ff5cc4]/10"
+                  >
+                    Duplicate QR
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleArchiveQR(party.id);
+                      setShowOptionsMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-[#ff5cc4]/80 hover:text-[#ff3b5c] hover:bg-[#ff3b5c]/10 transition-colors border-t border-[#ff5cc4]/10"
+                  >
+                    Archive
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="bg-white aspect-square rounded-2xl relative flex items-center justify-center p-6 mb-6 neon-ring-cyan">
