@@ -320,6 +320,21 @@ export default function App() {
     [notifyUser]
   );
 
+  const handleCreateParty = useCallback(
+    (partyData: Omit<Party, 'id' | 'createdAt' | 'qrCode' | 'rejectionReason'>) => {
+      const newParty: Party = {
+        ...partyData,
+        id: `p_${Date.now()}`,
+        createdAt: Date.now(),
+      };
+
+      setParties((prev) => [...prev, newParty]);
+      setShowPartyCreation(false);
+      notifyUser(`"${partyData.name}" submitted for admin verification`);
+    },
+    [notifyUser]
+  );
+
   if (!currentUser) {
     if (isRegistering && registeringRole) {
       return (
@@ -369,7 +384,7 @@ export default function App() {
           <InfluencerDashboard
             user={currentUser}
             parties={parties.filter((p) => p.hostId === currentUser.uid)}
-            onCreateEvent={() => notifyUser('Event creation modal coming soon')}
+            onCreateEvent={() => setShowPartyCreation(true)}
             onLogout={handleLogout}
             onRequestVerification={() => handleRequestVerification(currentUser.uid)}
           />
@@ -551,6 +566,17 @@ export default function App() {
         {currentUser.role === 'USER' && (
           <BottomNav currentTab={currentView} onTabChange={setCurrentView} />
         )}
+
+        {/* Party Creation Modal */}
+        <AnimatePresence>
+          {showPartyCreation && currentUser && (
+            <PartyCreation
+              user={currentUser}
+              onCreateParty={handleCreateParty}
+              onClose={() => setShowPartyCreation(false)}
+            />
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
