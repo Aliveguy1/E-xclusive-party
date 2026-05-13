@@ -18,7 +18,9 @@ import { BottomNav } from './components/BottomNav';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { Logo } from './components/Logo';
-import { UserRole, UserProfile, Party } from './types';
+import { EventDetailsModal } from './components/EventDetailsModal';
+import { TicketBooking } from './components/TicketBooking';
+import { UserRole, UserProfile, Party, Review, Booking } from './types';
 import { generateGoogleCalendarLink } from './services/calendar';
 
 // ---------------- Mock Data ----------------
@@ -138,6 +140,9 @@ export default function App() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>(MOCK_USERS);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [parties, setParties] = useState<Party[]>(MOCK_PARTIES);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [followers, setFollowers] = useState<Map<string, Set<string>>>(new Map());
   const [currentView, setCurrentView] = useState('discover');
   const [showNotifications, setShowNotifications] = useState(false);
   const [activeNotifications, setActiveNotifications] = useState<
@@ -145,6 +150,10 @@ export default function App() {
   >([]);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registeringRole, setRegisteringRole] = useState<UserRole | null>(null);
+  const [selectedEventDetails, setSelectedEventDetails] = useState<Party | null>(null);
+  const [showEventDetailsModal, setShowEventDetailsModal] = useState(false);
+  const [selectedEventForBooking, setSelectedEventForBooking] = useState<Party | null>(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   const approvedParties = useMemo(
     () => parties.filter((p) => p.status === 'APPROVED'),
@@ -320,19 +329,119 @@ export default function App() {
     [notifyUser]
   );
 
-  const handleCreateParty = useCallback(
-    (partyData: Omit<Party, 'id' | 'createdAt' | 'qrCode' | 'rejectionReason'>) => {
-      const newParty: Party = {
-        ...partyData,
-        id: `p_${Date.now()}`,
-        createdAt: Date.now(),
+  const handleViewEventDetails = useCallback((party: Party) => {
+    setSelectedEventDetails(party);
+    setShowEventDetailsModal(true);
+  }, []);
+
+  const handleBookTickets = useCallback((party: Party) => {
+    setSelectedEventForBooking(party);
+    setShowBookingModal(true);
+    setShowEventDetailsModal(false);
+  }, []);
+
+  const handleConfirmBooking = useCallback(
+    (quantity: number, totalPrice: number) => {
+      if (!currentUser || !selectedEventForBooking) return;
+
+      const booking: Booking = {
+        id: `booking_${Date.now()}`,
+        partyId: selectedEventForBooking.id,
+        userId: currentUser.uid,
+        quantity,
+        totalPrice,
+        status: 'confirmed',
+        bookingDate: Date.now(),
+        qrTicket: `QR_${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       };
 
-      setParties((prev) => [...prev, newParty]);
-      setShowPartyCreation(false);
-      notifyUser(`"${partyData.name}" submitted for admin verification`);
+      setBookings((prev) => [...prev, booking]);
+      setParties((prev) =>
+        prev.map((p) =>
+          p.id === selectedEventForBooking.id
+            ? { ...p, ticketsSold: (p.ticketsSold || 0) + quantity }
+            : p
+        )
+      );
+
+      notifyUser(`✅ Booking confirmed! ${quantity} ticket${quantity > 1 ? 's' : ''} for ${selectedEventForBooking.name}`);
+      setShowBookingModal(false);
+      setSelectedEventForBooking(null);
     },
-    [notifyUser]
+    [currentUser, selectedEventForBooking, notifyUser]
+  );
+
+  const handleAddReview = useCallback(
+    (partyId: string, rating: number, comment: string) => {
+      if (!currentUser) return;
+
+      const review: Review = {
+        id: `review_${Date.now()}`,
+        partyId,
+        userId: currentUser.uid,
+        userName: currentUser.nickname,
+        userPhoto: currentUser.photoURL,
+        rating,
+        comment,
+        createdAt: Date.now(),
+        helpful: 0,
+      };
+
+      setReviews((prev) => [...prev, review]);
+
+      // Update party rating
+      const partyReviews = [review, ...reviews.filter((r) => r.partyId === partyId)];
+      const avgRating = partyReviews.reduce((sum, r) => sum + r.rating, 0) / partyReviews.length;
+
+      setParties((prev) =>
+        prev.map((p) =>
+          p.id === partyId
+            ? {
+                ...p,
+                averageRating: avgRating,
+                totalReviews: partyReviews.length,
+              }
+            : p
+        )
+      );
+
+      notifyUser(`Review posted! Thanks for sharing your experience`);
+    },
+    [currentUser, reviews, notifyUser]
+  );
+
+  const handleFollowInfluencer = useCallback(
+    (influencerId: string) => {
+      if (!currentUser) return;
+
+      const newFollowers = new Map(followers);
+      const userFollowing = newFollowers.get(currentUser.uid) || new Set();
+      userFollowing.add(influencerId);
+      newFollowers.set(currentUser.uid, userFollowing);
+      setFollowers(newFollowers);
+
+      const influencer = allUsers.find((u) => u.uid === influencerId);
+      notifyUser(`Now following ${influencer?.nickname || 'user'}`);
+    },
+    [currentUser, followers, allUsers, notifyUser]
+  );
+
+  const handleUnfollowInfluencer = useCallback(
+    (influencerId: string) => {
+      if (!currentUser) return;
+
+      const newFollowers = new Map(followers);
+      const userFollowing = newFollowers.get(currentUser.uid);
+      if (userFollowing) {
+        userFollowing.delete(influencerId);
+        newFollowers.set(currentUser.uid, userFollowing);
+        setFollowers(newFollowers);
+      }
+
+      const influencer = allUsers.find((u) => u.uid === influencerId);
+      notifyUser(`Unfollowed ${influencer?.nickname || 'user'}`);
+    },
+    [currentUser, followers, allUsers, notifyUser]
   );
 
   if (!currentUser) {
@@ -384,16 +493,26 @@ export default function App() {
           <InfluencerDashboard
             user={currentUser}
             parties={parties.filter((p) => p.hostId === currentUser.uid)}
-            onCreateEvent={() => setShowPartyCreation(true)}
+            onCreateEvent={() => {}}
             onLogout={handleLogout}
             onRequestVerification={() => handleRequestVerification(currentUser.uid)}
+            onCreateParty={(partyData) => {
+              const newParty: Party = {
+                id: `party_${Date.now()}`,
+                ...partyData,
+                createdAt: Date.now(),
+              };
+              setParties((prev) => [...prev, newParty]);
+              notifyUser(`✅ Event "${newParty.name}" submitted for approval!`);
+            }}
           />
         );
       case 'discover':
         return (
           <Discover
             parties={parties}
-            onBook={(p) => notifyUser(`Requesting entry to ${p.name}…`)}
+            onBook={handleBookTickets}
+            onViewDetails={handleViewEventDetails}
           />
         );
       case 'profile':
@@ -402,7 +521,8 @@ export default function App() {
         return (
           <Discover
             parties={parties}
-            onBook={(p) => notifyUser(`Requesting entry to ${p.name}…`)}
+            onBook={handleBookTickets}
+            onViewDetails={handleViewEventDetails}
           />
         );
     }
@@ -566,18 +686,44 @@ export default function App() {
         {currentUser.role === 'USER' && (
           <BottomNav currentTab={currentView} onTabChange={setCurrentView} />
         )}
-
-        {/* Party Creation Modal */}
-        <AnimatePresence>
-          {showPartyCreation && currentUser && (
-            <PartyCreation
-              user={currentUser}
-              onCreateParty={handleCreateParty}
-              onClose={() => setShowPartyCreation(false)}
-            />
-          )}
-        </AnimatePresence>
       </main>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {showEventDetailsModal && selectedEventDetails && (
+          <EventDetailsModal
+            party={selectedEventDetails}
+            isOpen={showEventDetailsModal}
+            onClose={() => {
+              setShowEventDetailsModal(false);
+              setSelectedEventDetails(null);
+            }}
+            onBook={handleBookTickets}
+            currentUser={currentUser}
+            onShare={(p) =>{
+              notifyUser(`Shared ${p.name}! 📤`);
+            }}
+            onFavorite={(p) => {
+              notifyUser(`${p.name} added to favorites ❤️`);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBookingModal && selectedEventForBooking && currentUser && (
+          <TicketBooking
+            party={selectedEventForBooking}
+            user={currentUser}
+            isOpen={showBookingModal}
+            onClose={() => {
+              setShowBookingModal(false);
+              setSelectedEventForBooking(null);
+            }}
+            onConfirm={handleConfirmBooking}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

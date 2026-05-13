@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PlusCircle, TrendingUp, Share2, Edit2, CheckCircle, LogOut, ShieldAlert, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Party, UserProfile } from '../types';
+import { PartyCreation } from './PartyCreation';
+import { AnalyticsDashboard } from './AnalyticsDashboard';
 
 interface InfluencerDashboardProps {
   user: UserProfile;
@@ -9,6 +11,7 @@ interface InfluencerDashboardProps {
   onCreateEvent: () => void;
   onLogout: () => void;
   onRequestVerification: () => void;
+  onCreateParty?: (party: Omit<Party, 'id' | 'createdAt' | 'qrCode' | 'rejectionReason'>) => void;
 }
 
 export const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({
@@ -17,7 +20,11 @@ export const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({
   onCreateEvent,
   onLogout,
   onRequestVerification,
+  onCreateParty,
 }) => {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'events' | 'analytics' | 'create'>('events');
+
   const stats = useMemo(() => {
     const live = parties.filter((p) => p.status === 'APPROVED');
     const pending = parties.filter((p) => p.status === 'PENDING');
@@ -73,7 +80,7 @@ export const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({
             Exit
           </button>
           <button
-            onClick={onCreateEvent}
+            onClick={() => setShowCreateModal(true)}
             className="btn-neon"
             data-testid="dashboard-create-event"
           >
@@ -82,6 +89,30 @@ export const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({
           </button>
         </div>
       </section>
+
+      {/* Tabs */}
+      <div className="flex gap-4 mb-8 border-b border-white/10 pb-4">
+        <button
+          onClick={() => setActiveTab('events')}
+          className={`text-xs font-label uppercase tracking-[0.25em] font-bold transition-colors pb-2 border-b-2 ${
+            activeTab === 'events'
+              ? 'text-white border-[#ff2bd6]'
+              : 'text-[#bba8d6]/50 border-transparent hover:text-white'
+          }`}
+        >
+          Your Events
+        </button>
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`text-xs font-label uppercase tracking-[0.25em] font-bold transition-colors pb-2 border-b-2 ${
+            activeTab === 'analytics'
+              ? 'text-white border-[#ff2bd6]'
+              : 'text-[#bba8d6]/50 border-transparent hover:text-white'
+          }`}
+        >
+          Analytics
+        </button>
+      </div>
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-12">
         <StatCard label="Global Reach" value="12.4K" accent="#ff2bd6" />
@@ -103,44 +134,47 @@ export const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({
         />
       </section>
 
+      {/* Content Based on Tab */}
       <section className="space-y-6 flex-1">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl uppercase tracking-[0.2em] text-white">
-            Event Inventory
-          </h2>
-          <div className="flex gap-5">
-            <button className="text-[10px] font-label text-white uppercase tracking-[0.25em] font-bold border-b border-[#ff2bd6] pb-1">
-              Active
-            </button>
-            <button className="text-[10px] font-label text-[#bba8d6]/50 uppercase tracking-[0.25em] hover:text-white transition-colors">
-              Archived
-            </button>
-          </div>
-        </div>
+        {activeTab === 'events' && (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-xl uppercase tracking-[0.2em] text-white">
+                Event Inventory
+              </h2>
+              <div className="flex gap-5">
+                <button className="text-[10px] font-label text-white uppercase tracking-[0.25em] font-bold border-b border-[#ff2bd6] pb-1">
+                  Active
+                </button>
+                <button className="text-[10px] font-label text-[#bba8d6]/50 uppercase tracking-[0.25em] hover:text-white transition-colors">
+                  Archived
+                </button>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {parties.map((party) => (
-            <motion.div
-              key={party.id}
-              layout
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card rounded-2xl overflow-hidden group hover:-translate-y-1 transition-transform duration-300"
-              data-testid={`dashboard-event-${party.id}`}
-            >
-              <div className="h-44 w-full relative overflow-hidden">
-                <img
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  src={party.posterURL}
-                  alt={party.name}
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b0612] via-transparent to-transparent" />
-                <div className="absolute top-3 right-3">
-                  {party.status === 'APPROVED' ? (
-                    <span className="chip chip-live">
-                      <span className="w-1.5 h-1.5 bg-[#b6ff3c] rounded-full" /> Live
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {parties.map((party) => (
+                <motion.div
+                  key={party.id}
+                  layout
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass-card rounded-2xl overflow-hidden group hover:-translate-y-1 transition-transform duration-300"
+                  data-testid={`dashboard-event-${party.id}`}
+                >
+                  <div className="h-44 w-full relative overflow-hidden">
+                    <img
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      src={party.posterURL}
+                      alt={party.name}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b0612] via-transparent to-transparent" />
+                    <div className="absolute top-3 right-3">
+                      {party.status === 'APPROVED' ? (
+                        <span className="chip chip-live">
+                          <span className="w-1.5 h-1.5 bg-[#b6ff3c] rounded-full" /> Live
                     </span>
                   ) : party.status === 'PENDING' ? (
                     <span className="chip chip-pending">
@@ -180,41 +214,64 @@ export const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({
               </div>
             </motion.div>
           ))}
-        </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'analytics' && (
+          <AnalyticsDashboard parties={parties} />
+        )}
       </section>
+
+      {/* Party Creation Modal */}
+      {showCreateModal && (
+        <PartyCreation
+          user={user}
+          onCreateParty={(partyData) => {
+            onCreateParty?.(partyData);
+            setShowCreateModal(false);
+          }}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
     </div>
   );
 };
 
-const StatCard: React.FC<{
+class StatCard extends React.Component<{
   label: string;
   value: string;
   accent: string;
   wide?: boolean;
-}> = ({ label, value, accent, wide }) => (
-  <div
-    className={`glass-card rounded-2xl p-5 h-32 flex flex-col justify-between relative overflow-hidden ${
-      wide ? 'col-span-2' : ''
-    }`}
-  >
-    <span
-      className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-20 blur-2xl"
-      style={{ background: accent }}
-    />
-    <span className="font-label text-[10px] text-[#bba8d6]/55 uppercase tracking-[0.25em] font-bold relative z-10">
-      {label}
-    </span>
-    <div
-      className="text-3xl font-display font-bold relative z-10"
-      style={{ color: accent }}
-    >
-      {value}
-    </div>
-    <div className="w-full h-0.5 bg-white/5 rounded-full overflow-hidden relative z-10">
+}> {
+  render() {
+    const { label, value, accent, wide } = this.props;
+    return (
       <div
-        className="h-full w-3/4 rounded-full"
-        style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
-      />
-    </div>
-  </div>
-);
+        className={`glass-card rounded-2xl p-5 h-32 flex flex-col justify-between relative overflow-hidden ${
+          wide ? 'col-span-2' : ''
+        }`}
+      >
+        <span
+          className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-20 blur-2xl"
+          style={{ background: accent }}
+        />
+        <span className="font-label text-[10px] text-[#bba8d6]/55 uppercase tracking-[0.25em] font-bold relative z-10">
+          {label}
+        </span>
+        <div
+          className="text-3xl font-display font-bold relative z-10"
+          style={{ color: accent }}
+        >
+          {value}
+        </div>
+        <div className="w-full h-0.5 bg-white/5 rounded-full overflow-hidden relative z-10">
+          <div
+            className="h-full w-3/4 rounded-full"
+            style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
+          />
+        </div>
+      </div>
+    );
+  }
+}

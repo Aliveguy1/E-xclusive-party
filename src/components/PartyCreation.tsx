@@ -16,6 +16,8 @@ export const PartyCreation: React.FC<PartyCreationProps> = ({ user, onCreatePart
     date: '',
     time: '',
     location: '',
+    latitude: '',
+    longitude: '',
     posterURL: '',
     capacity: '',
     price: '',
@@ -23,6 +25,11 @@ export const PartyCreation: React.FC<PartyCreationProps> = ({ user, onCreatePart
     dressCode: '',
     ageRestriction: '',
     contactEmail: user.email,
+    instagram: '',
+    twitter: '',
+    promoters: '',
+    cancellationPolicy: 'Full refund up to 48 hours before event',
+    refundPolicy: 'Money back if event is cancelled',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -96,6 +103,8 @@ export const PartyCreation: React.FC<PartyCreationProps> = ({ user, onCreatePart
         date: formData.date,
         time: formData.time,
         location: formData.location,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
         posterURL: formData.posterURL,
         status: 'PENDING',
         capacity: parseInt(formData.capacity),
@@ -104,6 +113,11 @@ export const PartyCreation: React.FC<PartyCreationProps> = ({ user, onCreatePart
         dressCode: formData.dressCode,
         ageRestriction: formData.ageRestriction ? parseInt(formData.ageRestriction) : undefined,
         contactEmail: formData.contactEmail,
+        instagram: formData.instagram,
+        twitter: formData.twitter,
+        promoters: formData.promoters ? formData.promoters.split(',').map(p => p.trim()) : [],
+        cancellationPolicy: formData.cancellationPolicy,
+        refundPolicy: formData.refundPolicy,
         ticketsSold: 0,
       });
       setIsLoading(false);
@@ -387,6 +401,113 @@ export const PartyCreation: React.FC<PartyCreationProps> = ({ user, onCreatePart
               } rounded-xl text-white px-4 py-3 focus:outline-none focus:border-[#ff2bd6] transition-colors`}
             />
             {errors.contactEmail && <p className="text-[#ff3b5c] text-xs mt-1">{errors.contactEmail}</p>}
+          </div>
+
+          {/* Social Media & Promoters */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs text-[#ff5cc4] font-label uppercase tracking-wider mb-2 font-bold">
+                Instagram Handle (Optional)
+              </label>
+              <input
+                type="text"
+                name="instagram"
+                value={formData.instagram}
+                onChange={handleChange}
+                className="w-full bg-[#11091c]/70 border border-[#ff5cc4]/15 rounded-xl text-white px-4 py-3 focus:outline-none focus:border-[#ff2bd6] transition-colors"
+                placeholder="@yourhandle"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#ff5cc4] font-label uppercase tracking-wider mb-2 font-bold">
+                Twitter Handle (Optional)
+              </label>
+              <input
+                type="text"
+                name="twitter"
+                value={formData.twitter}
+                onChange={handleChange}
+                className="w-full bg-[#11091c]/70 border border-[#ff5cc4]/15 rounded-xl text-white px-4 py-3 focus:outline-none focus:border-[#ff2bd6] transition-colors"
+                placeholder="@yourhandle"
+              />
+            </div>
+          </div>
+
+          {/* Promoters & Location Coords */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs text-[#ff5cc4] font-label uppercase tracking-wider mb-2 font-bold">
+                Promoters (Optional)
+              </label>
+              <input
+                type="text"
+                name="promoters"
+                value={formData.promoters}
+                onChange={handleChange}
+                className="w-full bg-[#11091c]/70 border border-[#ff5cc4]/15 rounded-xl text-white px-4 py-3 focus:outline-none focus:border-[#ff2bd6] transition-colors"
+                placeholder="Enter names separated by commas"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#ff5cc4] font-label uppercase tracking-wider mb-2 font-bold">
+                Latitude (Optional)
+              </label>
+              <input
+                type="number"
+                name="latitude"
+                value={formData.latitude}
+                onChange={handleChange}
+                className="w-full bg-[#11091c]/70 border border-[#ff5cc4]/15 rounded-xl text-white px-4 py-3 focus:outline-none focus:border-[#ff2bd6] transition-colors"
+                placeholder="e.g., 51.5074"
+                step="0.0001"
+              />
+            </div>
+          </div>
+
+          {/* Longitude & Policies */}
+          <div>
+            <label className="block text-xs text-[#ff5cc4] font-label uppercase tracking-wider mb-2 font-bold">
+              Longitude (Optional)
+            </label>
+            <input
+              type="number"
+              name="longitude"
+              value={formData.longitude}
+              onChange={handleChange}
+              className="w-full bg-[#11091c]/70 border border-[#ff5cc4]/15 rounded-xl text-white px-4 py-3 focus:outline-none focus:border-[#ff2bd6] transition-colors"
+              placeholder="e.g., -0.1278"
+              step="0.0001"
+            />
+          </div>
+
+          {/* Cancellation & Refund Policies */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs text-[#ff5cc4] font-label uppercase tracking-wider mb-2 font-bold">
+                Cancellation Policy (Optional)
+              </label>
+              <textarea
+                name="cancellationPolicy"
+                value={formData.cancellationPolicy}
+                onChange={handleChange}
+                rows={3}
+                className="w-full bg-[#11091c]/70 border border-[#ff5cc4]/15 rounded-xl text-white px-4 py-3 focus:outline-none focus:border-[#ff2bd6] transition-colors resize-none"
+                placeholder="Describe your cancellation terms..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#ff5cc4] font-label uppercase tracking-wider mb-2 font-bold">
+                Refund Policy (Optional)
+              </label>
+              <textarea
+                name="refundPolicy"
+                value={formData.refundPolicy}
+                onChange={handleChange}
+                rows={3}
+                className="w-full bg-[#11091c]/70 border border-[#ff5cc4]/15 rounded-xl text-white px-4 py-3 focus:outline-none focus:border-[#ff2bd6] transition-colors resize-none"
+                placeholder="Describe your refund terms..."
+              />
+            </div>
           </div>
 
           {/* Info box */}

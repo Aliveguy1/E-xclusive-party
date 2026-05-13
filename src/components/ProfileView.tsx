@@ -14,6 +14,7 @@ import { UserProfile } from '../types';
 interface ProfileViewProps {
   user: UserProfile;
   onLogout: () => void;
+  onSettings?: () => void;
 }
 
 interface ConnectRowProps {
@@ -50,7 +51,7 @@ const ConnectRow: React.FC<ConnectRowProps> = ({ icon: Icon, label, value, accen
   </div>
 );
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout, onSettings }) => {
   const handleChangePhoto = () => {
     const input = document.createElement('input');
     input.type = 'file';

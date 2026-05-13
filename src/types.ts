@@ -10,6 +10,7 @@ export interface UserProfile {
   twitter?: string;
   isVerified: boolean;
   isVerificationPending?: boolean;
+  isBanned?: boolean;
   photoURL?: string;
   createdAt: number;
 }
@@ -37,5 +38,53 @@ export interface Party {
   dressCode?: string;
   ageRestriction?: number;
   contactEmail?: string;
+  latitude?: number;
+  longitude?: number;
+  instagram?: string;
+  twitter?: string;
+  promoters?: string[];
+  cancellationPolicy?: string;
+  refundPolicy?: string;
+  averageRating?: number;
+  totalReviews?: number;
   createdAt: number;
+}
+
+export interface Booking {
+  id: string;
+  partyId: string;
+  userId: string;
+  quantity: number;
+  totalPrice: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  bookingDate: number;
+  qrTicket?: string;
+}
+
+export interface Review {
+  id: string;
+  partyId: string;
+  userId: string;
+  userName: string;
+  userPhoto?: string;
+  rating: number; // 1-5
+  comment: string;
+  createdAt: number;
+  helpful?: number;
+}
+
+export interface Follow {
+  followerId: string;
+  followingId: string;
+  createdAt: number;
+}
+
+export interface Analytics {
+  partyId: string;
+  totalBookings: number;
+  totalRevenue: number;
+  ticketssoldPercentage: number;
+  averageRating: number;
+  viewCount: number;
+  shareCount: number;
 }

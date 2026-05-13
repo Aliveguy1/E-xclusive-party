@@ -41,7 +41,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onRegisterClick, allUsers
 
       // Try to authenticate with registered users
       const user = allUsers.find(
-        (u) => u.nickname.toLowerCase() === username.toLowerCase() && u.password === password
+        (u) => u.nickname.toLowerCase() === username.toLowerCase() && (u as any).password === password
       );
 
       if (user && user.role === selectedRole) {

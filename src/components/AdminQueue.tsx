@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Check, SkipForward, Calendar, MapPin, DollarSign, Maximize2 } from 'lucide-react';
+import { Check, SkipForward, Calendar, MapPin, DollarSign, Maximize2, Edit2, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Party } from '../types';
 
@@ -7,12 +7,16 @@ interface AdminQueueProps {
   pendingParties: Party[];
   onApprove: (id: string) => Promise<void>;
   onReject: (id: string, reason: string) => Promise<void>;
+  onEdit?: (id: string) => void;
+  onRemove?: (id: string) => Promise<void>;
 }
 
-export const AdminQueue: React.FC<AdminQueueProps> = ({ pendingParties, onApprove, onReject }) => {
+export const AdminQueue: React.FC<AdminQueueProps> = ({ pendingParties, onApprove, onReject, onEdit, onRemove }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isApproving, setIsApproving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
   const currentParty = pendingParties[currentIndex];
 
@@ -27,6 +31,14 @@ export const AdminQueue: React.FC<AdminQueueProps> = ({ pendingParties, onApprov
     await onApprove(currentParty.id);
     setIsApproving(false);
   }, [currentParty, onApprove]);
+
+  const handleRemove = useCallback(async () => {
+    if (!currentParty || !onRemove) return;
+    setIsRemoving(true);
+    await onRemove(currentParty.id);
+    setIsRemoving(false);
+    setShowRemoveConfirm(false);
+  }, [currentParty, onRemove]);
 
   if (!currentParty) {
     return (
@@ -200,6 +212,52 @@ export const AdminQueue: React.FC<AdminQueueProps> = ({ pendingParties, onApprov
                 {isApproving ? 'Generating QR…' : 'Approve & Trigger QR'}
               </button>
             </div>
+
+            {/* Additional Admin Actions */}
+            <div className="flex gap-3 pt-6 border-t border-white/5">
+              <button
+                onClick={() => onEdit?.(currentParty.id)}
+                className="flex-1 py-3 rounded-lg bg-[#9b5cff]/10 text-[#9b5cff] border border-[#9b5cff]/30 text-xs font-bold uppercase tracking-[0.22em] hover:bg-[#9b5cff]/20 transition-all font-label flex items-center justify-center gap-2"
+                data-testid="queue-edit"
+              >
+                <Edit2 size={12} /> Edit Event
+              </button>
+              <button
+                onClick={() => setShowRemoveConfirm(true)}
+                className="flex-1 py-3 rounded-lg bg-[#ff3b5c]/10 text-[#ff5cc4] border border-[#ff5cc4]/30 text-xs font-bold uppercase tracking-[0.22em] hover:bg-[#ff3b5c]/20 transition-all font-label flex items-center justify-center gap-2"
+                data-testid="queue-remove"
+              >
+                <Trash2 size={12} /> Remove
+              </button>
+            </div>
+
+            {/* Remove Confirmation */}
+            {showRemoveConfirm && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-4 rounded-lg bg-[#ff3b5c]/15 border border-[#ff3b5c]/30 flex items-center justify-between"
+              >
+                <p className="text-xs text-[#ff3b5c] font-label uppercase tracking-wider">
+                  Delete this event permanently?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowRemoveConfirm(false)}
+                    className="px-3 py-1 text-xs rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors font-label font-bold uppercase tracking-wider"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRemove}
+                    disabled={isRemoving}
+                    className="px-3 py-1 text-xs rounded-lg bg-[#ff3b5c] text-white hover:bg-[#ff2540] transition-colors font-label font-bold uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {isRemoving ? 'Removing…' : 'Delete'}
+                  </button>
+                </div>
+              </motion.div>
+            )}
           </div>
         </section>
       </div>

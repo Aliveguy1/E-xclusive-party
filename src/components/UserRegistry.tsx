@@ -13,11 +13,13 @@ import { UserProfile } from '../types';
 interface UserRegistryProps {
   users: UserProfile[];
   onApproveVerification: (userId: string) => void;
+  onBanInfluencer?: (userId: string) => void;
 }
 
-export const UserRegistry: React.FC<UserRegistryProps> = ({ users, onApproveVerification }) => {
+export const UserRegistry: React.FC<UserRegistryProps> = ({ users, onApproveVerification, onBanInfluencer }) => {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'INFLUENCER' | 'USER' | 'ADMIN'>('ALL');
+  const [banConfirm, setBanConfirm] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -178,9 +180,38 @@ export const UserRegistry: React.FC<UserRegistryProps> = ({ users, onApproveVeri
                       <button className="p-2 rounded-lg bg-white/[0.02] text-[#bba8d6]/55 border border-white/5 hover:text-[#2bf0ff] hover:border-[#2bf0ff]/40 transition-all">
                         <Mail size={16} />
                       </button>
-                      <button className="p-2 rounded-lg bg-white/[0.02] text-[#bba8d6]/55 border border-white/5 hover:text-[#ff3b5c] hover:border-[#ff3b5c]/40 transition-all">
-                        <Ban size={16} />
-                      </button>
+                      {user.role === 'INFLUENCER' && !user.isBanned && (
+                        <button
+                          onClick={() => setBanConfirm(user.uid)}
+                          className="p-2 rounded-lg bg-white/[0.02] text-[#bba8d6]/55 border border-white/5 hover:text-[#ff3b5c] hover:border-[#ff3b5c]/40 transition-all"
+                          title="Ban this host"
+                          data-testid={`registry-ban-${user.uid}`}
+                        >
+                          <Ban size={16} />
+                        </button>
+                      )}
+                      {banConfirm === user.uid && (
+                        <div className="absolute right-0 top-full mt-2 bg-[#0b0612] border border-[#ff3b5c]/30 rounded-lg p-3 z-10 whitespace-nowrap">
+                          <p className="text-xs text-white mb-2">Ban this host?</p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setBanConfirm(null)}
+                              className="px-2 py-1 text-xs rounded bg-white/10 text-white hover:bg-white/20 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => {
+                                onBanInfluencer?.(user.uid);
+                                setBanConfirm(null);
+                              }}
+                              className="px-2 py-1 text-xs rounded bg-[#ff3b5c] text-white hover:bg-[#ff2540] transition-colors"
+                            >
+                              Ban
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

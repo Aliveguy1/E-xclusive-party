@@ -7,6 +7,7 @@ import { generateGoogleCalendarLink } from '../services/calendar';
 interface DiscoverProps {
   parties: Party[];
   onBook: (party: Party) => void;
+  onViewDetails?: (party: Party) => void;
 }
 
 type FilterTab = 'foryou' | 'upcoming';
@@ -14,9 +15,11 @@ type FilterTab = 'foryou' | 'upcoming';
 const PartyCard = React.memo(function PartyCard({
   party,
   onCalendar,
+  onViewDetails,
 }: {
   party: Party;
   onCalendar: (p: Party) => void;
+  onViewDetails?: (p: Party) => void;
 }) {
   const [isFavorited, setIsFavorited] = React.useState(false);
 
@@ -30,7 +33,8 @@ const PartyCard = React.memo(function PartyCard({
       layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-card rounded-2xl overflow-hidden flex flex-col group hover:-translate-y-1 transition-transform duration-300"
+      onClick={() => onViewDetails?.(party)}
+      className="glass-card rounded-2xl overflow-hidden flex flex-col group hover:-translate-y-1 transition-transform duration-300 cursor-pointer"
       data-testid={`party-card-${party.id}`}
     >
       <div className="relative h-52 overflow-hidden">
@@ -98,7 +102,7 @@ const PartyCard = React.memo(function PartyCard({
   );
 });
 
-export const Discover: React.FC<DiscoverProps> = ({ parties, onBook }) => {
+export const Discover: React.FC<DiscoverProps> = ({ parties, onBook, onViewDetails }) => {
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<FilterTab>('foryou');
 
@@ -257,7 +261,7 @@ export const Discover: React.FC<DiscoverProps> = ({ parties, onBook }) => {
           data-testid="discover-grid"
         >
           {filtered.slice(1).map((party) => (
-            <PartyCard key={party.id} party={party} onCalendar={handleCalendar} />
+            <PartyCard key={party.id} party={party} onCalendar={handleCalendar} onViewDetails={onViewDetails} />
           ))}
         </section>
       )}
